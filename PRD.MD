@@ -45,10 +45,9 @@ Em ambientes corporativos com múltiplos projetos, é comum:
 │     ex: https://gitlab.empresa.com/time/meu-projeto     │
 │                                                         │
 │  2. Sistema conecta via GitLab API e extrai:            │
-│     • Nome, descrição, linguagens                       │
+│     • Nome do projeto                                   │
 │     • Dependências (package.json, Gemfile, etc.)        │
 │     • Versões utilizadas                                │
-│     • Branch default, último commit                     │
 │                                                         │
 │  3. Sistema analisa:                                    │
 │     • Compara versões com as mais recentes              │
@@ -59,8 +58,8 @@ Em ambientes corporativos com múltiplos projetos, é comum:
 │     • Dependências desatualizadas                       │
 │     • Alertas de vulnerabilidades                       │
 │                                                         │
-│  5. Sync automático periódico (a cada 24h)              │
-│     mantém os dados sempre atualizados                  │
+│  5. Sync manual no MVP e automação em evolução futura   │
+│     para manter os dados atualizados                    │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -78,10 +77,7 @@ O usuário informa **apenas o link do repositório GitLab**. O sistema faz o res
 
 **O sistema extrai automaticamente:**
 - Nome do projeto
-- Descrição
-- Linguagens detectadas pelo GitLab
-- Branch padrão
-- Último commit (data, autor)
+- Identificador do projeto no GitLab
 
 ### 5.2 Detecção Automática de Dependências
 
@@ -140,11 +136,11 @@ O sistema consulta bases de vulnerabilidades conhecidas para cada dependência:
 - Versão corrigida (se disponível)
 - Link para detalhes
 
-### 5.5 Sincronização Automática
+### 5.5 Sincronização
 
-- **Sync periódico**: A cada 24 horas, o sistema re-analisa todos os projetos
-- **Sync manual**: Botão "Re-sincronizar" disponível por projeto
-- **Histórico de syncs**: Log de quando cada projeto foi atualizado pela última vez
+- **Sync manual**: Botão "Re-sincronizar" disponível por projeto no MVP
+- **Automação futura**: O processo de sincronização poderá ser executado por agendamento interno ou por um orquestrador como `n8n`
+- **Comportamento inicial**: Cada nova sincronização atualiza o estado atual das dependências do projeto, sem manter histórico de execuções
 
 ### 5.6 Dashboard
 
@@ -171,10 +167,10 @@ O sistema consulta bases de vulnerabilidades conhecidas para cada dependência:
 ```
 
 **Visão por projeto:**
-- Lista de todas as dependências com status
-- Vulnerabilidades encontradas
-- Histórico de sincronizações
-- Informações do repositório (último commit, branch, etc.)
+- Lista de todas as dependências encontradas
+- Versões utilizadas por dependência
+- Vulnerabilidades encontradas (quando essa etapa estiver ativa)
+- Informações básicas do projeto monitorado
 
 ### 5.7 Configurações
 
@@ -187,47 +183,48 @@ O sistema consulta bases de vulnerabilidades conhecidas para cada dependência:
 ## 6. Modelo de Dados
 
 ```
-┌─────────────────────┐       ┌──────────────────────┐
-│      Projeto        │       │    Dependência        │
-├─────────────────────┤       ├──────────────────────┤
-│ id                  │       │ id                    │
-│ gitlab_url          │       │ projeto_id (FK)       │
-│ gitlab_project_id   │       │ nome                  │
-│ nome                │       │ versao_utilizada      │
-│ descricao           │  1:N  │ versao_mais_recente   │
-│ linguagens (json)   │──────▶│ ecossistema           │
-│ branch_padrao       │       │ tipo (prod/dev)       │
-│ ultimo_commit_hash  │       │ status                │
-│ ultimo_commit_data  │       │ created_at            │
-│ status (ativo/arq.) │       │ updated_at            │
-│ created_at          │       └──────────────────────┘
-│ updated_at          │
-│ ultimo_sync_at      │       ┌──────────────────────┐
-└─────────────────────┘       │  Vulnerabilidade      │
-                              ├──────────────────────┤
-┌─────────────────────┐       │ id                    │
-│   Configuracao      │       │ dependencia_id (FK)   │
-├─────────────────────┤       │ cve_id                │
-│ id                  │       │ severidade             │
-│ gitlab_token (enc.) │       │ descricao             │
-│ sync_intervalo_h    │       │ versao_corrigida      │
-│ created_at          │       │ link_referencia       │
-│ updated_at          │       │ created_at            │
-└─────────────────────┘       └──────────────────────┘
-
-┌─────────────────────┐
-│   SyncLog           │
-├─────────────────────┤
-│ id                  │
-│ projeto_id (FK)     │
-│ status (ok/erro)    │
-│ dependencias_total  │
-│ vulnerabilidades    │
-│ erro_mensagem       │
-│ duracao_ms          │
-│ created_at          │
-└─────────────────────┘
+┌─────────────────────┐       ┌──────────────────────┐       ┌──────────────────────────┐
+│      Projeto        │       │     Dependencia      │       │  ProjetoDependencia      │
+├─────────────────────┤       ├──────────────────────┤       ├──────────────────────────┤
+│ id                  │       │ id                    │       │ id                       │
+│ gitlab_url          │       │ nome                  │       │ projeto_id (FK)          │
+│ gitlab_project_id   │  N:N  │ created_at            │  N:N  │ dependencia_id (FK)      │
+│ name                │◀─────▶│ updated_at            │◀─────▶│ versao_utilizada         │
+│ created_at          │       └──────────────────────┘       │ tipo (prod/dev)          │
+│ updated_at          │                                      │ created_at               │
+└─────────────────────┘                                      │ updated_at               │
+                                                             └──────────────────────────┘
 ```
+
+### Estrutura inicial
+
+O modelo do MVP foi simplificado para armazenar apenas o essencial:
+
+- `projects`: identifica o repositório monitorado
+- `dependencies`: representa a dependência como entidade compartilhada entre projetos
+- `project_dependencies`: representa o uso da dependência dentro de cada projeto, incluindo versão utilizada e tipo
+
+### Relacionamento
+
+- Um `project` pode possuir muitas `dependencies`
+- Uma `dependency` pode aparecer em muitos `projects`
+- A tabela `project_dependencies` resolve essa relação muitos-para-muitos
+
+### Exemplo conceitual
+
+- O projeto `cesv` usa `nodejs` na versão `20.x`
+- O projeto `seguranca` usa `nodejs` na versão `18.x`
+- `nodejs` existe uma vez em `dependencies`
+- Cada uso fica registrado em `project_dependencies`
+
+### Evolucao futura
+
+Campos e tabelas mais avancados ficam para etapas posteriores, como:
+
+- comparacao com versoes mais recentes
+- vulnerabilidades
+- historico de sincronizacao
+- configuracoes persistidas em banco
 
 ---
 
@@ -240,7 +237,7 @@ O sistema consulta bases de vulnerabilidades conhecidas para cada dependência:
 | **Frontend** | React | Ecossistema maduro, componentização |
 | **Banco de dados** | PostgreSQL | Robusto, suporte a JSON, queries complexas |
 | **Containerização** | Docker / Docker Compose | Padronização de ambiente |
-| **Agendamento** | Cron job via Elysia (plugin) ou BullMQ | Sync periódico dos projetos |
+| **Agendamento** | Cron job via Elysia, BullMQ ou n8n | Evolução da automação de sincronização |
 | **HTTP Client** | Fetch nativo (Bun) | Chamadas para GitLab API e registries |
 
 ---
@@ -254,6 +251,7 @@ O sistema consulta bases de vulnerabilidades conhecidas para cada dependência:
 | **npmjs Registry API** | Versão mais recente (Node/Bun) | REST API |
 | **RubyGems API** | Versão mais recente (Ruby) | REST API |
 | **PyPI API** | Versão mais recente (Python) | REST API |
+| **n8n** | Orquestração futura de sincronizações e alertas | Workflow automation |
 
 > **Nota sobre VPN**: O acesso ao GitLab corporativo requer conexão via VPN. O sistema deve estar na mesma rede ou ter rota de acesso ao GitLab da empresa.
 
@@ -266,6 +264,7 @@ O sistema consulta bases de vulnerabilidades conhecidas para cada dependência:
 - ✅ Adicionar projeto via link do GitLab
 - ✅ Extrair dependências automaticamente (`package.json` como prioridade)
 - ✅ Listar dependências e versões utilizadas
+- ✅ Relacionar projetos e dependências em modelo muitos-para-muitos
 - ✅ Dashboard simples com lista de projetos e dependências
 - ✅ Sync manual (botão re-sincronizar)
 - ✅ Configuração de token GitLab
@@ -285,7 +284,7 @@ O sistema consulta bases de vulnerabilidades conhecidas para cada dependência:
 ### v1.3 — Automação
 
 - ⬜ Sync automático periódico (cron configurável)
-- ⬜ Histórico de sincronizações (SyncLog)
+- ⬜ Orquestração opcional via `n8n`
 - ⬜ Suporte a múltiplos ecossistemas (Ruby, Python, Java, etc.)
 
 ### v2.0 — Evolução
