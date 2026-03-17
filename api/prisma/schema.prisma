@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id                  String              @id @default(uuid()) @db.Uuid
+  name                String
+  gitlabUrl           String              @unique
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  projectDependencies ProjectDependency[]
+
+  @@map("projects")
+}
+
+model Dependency {
+  id                  String              @id @default(uuid()) @db.Uuid
+  name                String              @unique
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  projectDependencies ProjectDependency[]
+
+  @@map("dependencies")
+}
+
+model ProjectDependency {
+  id           String     @id @default(uuid()) @db.Uuid
+  projectId    String     @db.Uuid
+  dependencyId String     @db.Uuid
+  version      String
+  type         String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dependency   Dependency @relation(fields: [dependencyId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, dependencyId])
+  @@index([projectId])
+  @@index([dependencyId])
+  @@map("project_dependencies")
+}

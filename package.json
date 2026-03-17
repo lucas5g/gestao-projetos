@@ -1,0 +1,19 @@
+{
+  "name": "gestao-projetos",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "bun@1.2.22",
+  "workspaces": [
+    "api",
+    "web"
+  ],
+  "scripts": {
+    "api:dev": "bun run --filter @gestao-projetos/api dev",
+    "api:start": "bun run --filter @gestao-projetos/api start",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:generate": "bun run --filter @gestao-projetos/api db:generate",
+    "db:migrate": "bun run --filter @gestao-projetos/api db:migrate",
+    "db:studio": "bun run --filter @gestao-projetos/api db:studio"
+  }
+}
