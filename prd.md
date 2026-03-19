@@ -42,8 +42,9 @@ Um sistema para acompanhar projetos baseados em Git e identificar se a versao us
 ## MVP
 
 - Cadastrar projetos monitorados
-- Informar repositorio de origem do projeto
-- Registrar a versao atual conhecida de cada projeto
+- Informar o link do GitHub do projeto no cadastro
+- Coletar e salvar automaticamente as informacoes basicas do projeto no momento do cadastro
+- Identificar e salvar a versao atual do projeto no momento do cadastro
 - Consultar a ultima release disponivel no repositorio de origem
 - Comparar versao atual com versao mais recente
 - Exibir status consolidado de atualizacao
@@ -61,31 +62,35 @@ Um sistema para acompanhar projetos baseados em Git e identificar se a versao us
 ## Requisitos funcionais
 
 - RF01: o usuario pode cadastrar um projeto para monitoramento
-- RF02: o usuario pode informar nome do projeto, caminho local opcional e URL do repositorio de origem
-- RF03: o usuario pode registrar manualmente a versao atual do projeto
-- RF04: o sistema pode consultar a ultima release disponivel no repositorio de origem
-- RF05: o sistema compara a versao atual registrada com a versao mais recente encontrada
-- RF06: o sistema exibe o status consolidado de cada projeto
-- RF07: o sistema permite atualizar a verificacao de um projeto individualmente
-- RF08: o sistema permite atualizar a verificacao de todos os projetos
-- RF09: o sistema envia notificacao para um webhook do Microsoft Teams quando detectar nova versao
-- RF10: o sistema evita notificacoes duplicadas para a mesma versao
-- RF11: o sistema salva a data e hora da ultima verificacao
-- RF12: o sistema salva a data e hora da ultima notificacao enviada
+- RF02: o cadastro do projeto deve aceitar o link do GitHub como dado principal de entrada
+- RF03: ao cadastrar um projeto, o sistema deve consultar o repositorio informado e salvar suas informacoes basicas
+- RF04: ao cadastrar um projeto, o sistema deve identificar e salvar a versao atual do projeto
+- RF05: o sistema pode consultar a ultima release disponivel no repositorio de origem
+- RF06: o sistema compara a versao atual salva com a versao mais recente encontrada
+- RF07: o sistema exibe o status consolidado de cada projeto
+- RF08: o sistema permite atualizar a verificacao de um projeto individualmente
+- RF09: o sistema permite atualizar a verificacao de todos os projetos
+- RF10: o sistema envia notificacao para um webhook do Microsoft Teams quando detectar nova versao
+- RF11: o sistema evita notificacoes duplicadas para a mesma versao
+- RF12: o sistema salva a data e hora da ultima verificacao
+- RF13: o sistema salva a data e hora da ultima notificacao enviada
 
 ## Requisitos nao funcionais
 
 - RNF01: a verificacao deve ser rapida para um conjunto pequeno de projetos no MVP
-- RNF02: o sistema nao deve alterar o repositorio local ou remoto
-- RNF03: erros de consulta, autenticacao ou parsing devem ser exibidos de forma clara
+- RNF02: o sistema nao deve alterar o projeto monitorado; apenas consultar informacoes e enviar notificacoes
+- RNF03: quando ocorrer falha na consulta ou notificacao, o sistema deve mostrar uma mensagem de erro simples e objetiva
 - RNF04: o envio ao Teams deve usar webhook configurado pelo usuario
 - RNF05: a interface deve ser simples e escaneavel
 
 ## Fluxo principal
 
-- Usuario cadastra um projeto e informa a versao atual conhecida
-- Sistema consulta a origem do projeto para descobrir a ultima release
-- Sistema compara a versao atual com a ultima versao encontrada
+- Usuario cadastra um projeto informando o link do GitHub
+- Sistema consulta o repositorio informado no momento do cadastro
+- Sistema salva as informacoes basicas do projeto
+- Sistema identifica e salva a versao atual do projeto no momento do cadastro
+- Sistema consulta a ultima release disponivel na origem
+- Sistema compara a versao salva com a ultima versao encontrada
 - Sistema mostra o status no painel
 - Se houver nova versao, sistema envia notificacao no Teams
 - Sistema registra a ultima verificacao e a ultima notificacao
@@ -112,7 +117,8 @@ Um sistema para acompanhar projetos baseados em Git e identificar se a versao us
 
 ## Primeiras historias de usuario
 
-- Como desenvolvedor, quero cadastrar um projeto com sua versao atual para acompanha-lo
+- Como desenvolvedor, quero cadastrar um projeto informando apenas o link do GitHub para acompanha-lo
+- Como desenvolvedor, quero que o sistema descubra e salve a versao atual no momento do cadastro
 - Como desenvolvedor, quero saber quando uma nova release for publicada para um projeto monitorado
 - Como desenvolvedor, quero receber esse aviso no Teams para nao depender de verificacao manual
 - Como desenvolvedor, quero ver qual versao eu uso hoje e qual versao nova foi encontrada
