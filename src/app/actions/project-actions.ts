@@ -18,7 +18,7 @@ export async function createProjectAction(
   }
 
   try {
-    await IntegrationService.addWithInitialVersion(parsed.data);
+    await ProjectService.create(parsed.data);
     revalidatePath("/");
     return { success: true };
   } catch (err) {

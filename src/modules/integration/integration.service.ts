@@ -1,76 +1,8 @@
-import type { Project } from "@prisma/client";
+import type { Project } from "@/generated/prisma/client";
+import { GitHubService } from "@/modules/github/github.service";
 import { ProjectModelCreate } from "@/modules/project/project.model";
 import { ProjectService } from "@/modules/project/project.service";
 import { IntegrationModel } from "./integration.model";
-
-const GITHUB_API = "https://api.github.com";
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-
-type GitHubRepo = {
-  owner: string;
-  repo: string;
-};
-
-function extractGitHubRepo(url: string): GitHubRepo {
-  const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
-  if (!match) {
-    throw new Error("URL do GitHub invalida");
-  }
-  return { owner: match[1], repo: match[2].replace(/\.git$/, "") };
-}
-
-async function fetchGitHub<T>(path: string): Promise<T> {
-  const headers: HeadersInit = {
-    Accept: "application/vnd.github.v3+json",
-    "User-Agent": "gestao-projetos-monitor",
-  };
-  if (GITHUB_TOKEN) {
-    headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
-  }
-  const res = await fetch(`${GITHUB_API}${path}`, { headers });
-  if (!res.ok) {
-    if (res.status === 404) {
-      throw new Error("Repositorio nao encontrado");
-    }
-    if (res.status === 403) {
-      throw new Error("Limite de requisicoes excedido");
-    }
-    throw new Error(`Erro ao acessar GitHub: ${res.status}`);
-  }
-  return res.json();
-}
-
-async function fetchLatestRelease(repo: GitHubRepo): Promise<string | null> {
-  try {
-    const data = await fetchGitHub<{ tag_name: string }>(
-      `/repos/${repo.owner}/${repo.repo}/releases/latest`
-    );
-    return data.tag_name?.replace(/^v/, "") ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchLatestTag(repo: GitHubRepo): Promise<string | null> {
-  try {
-    const data = await fetchGitHub<{ items: Array<{ name: string }> }>(
-      `/repos/${repo.owner}/${repo.repo}/tags?per_page=1&page=1`
-    );
-    const tag = data.items?.[0]?.name;
-    return tag ? tag.replace(/^v/, "") : null;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchLatestVersion(url: string): Promise<string> {
-  const repo = extractGitHubRepo(url);
-  const release = await fetchLatestRelease(repo);
-  if (release) return release;
-  const tag = await fetchLatestTag(repo);
-  if (tag) return tag;
-  throw new Error("Nenhuma release ou tag encontrada");
-}
 
 async function sendTeamsNotification(
   projectName: string,
@@ -109,9 +41,9 @@ async function sendTeamsNotification(
 }
 
 async function checkSingleProject(project: Project): Promise<IntegrationModel["checkResult"]> {
-  let currentVersion: string;
-  try {
-    currentVersion = await fetchLatestVersion(project.githubUrl);
+    let currentVersion: string;
+    try {
+      currentVersion = await GitHubService.fetchLatestVersion(project.githubUrl);
   } catch (err) {
     return {
       projectId: project.id,
@@ -207,11 +139,6 @@ export class IntegrationService {
   }
 
   static async addWithInitialVersion(input: ProjectModelCreate) {
-    const version = await fetchLatestVersion(input.githubUrl);
-    const project = await ProjectService.create({
-      name: input.name,
-      githubUrl: input.githubUrl,
-    });
-    return ProjectService.updateVersion(project.id, version);
+    return ProjectService.create({ githubUrl: input.githubUrl });
   }
 }
