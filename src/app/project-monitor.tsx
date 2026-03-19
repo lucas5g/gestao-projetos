@@ -144,7 +144,7 @@ export function ProjectMonitor({ initialProjects }: ProjectMonitorProps) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded bg-zinc-900 px-4 py-2 text-white transition-colors hover:bg-zinc-700 disabled:opacity-50"
+              className="cursor-pointer rounded bg-zinc-900 px-4 py-2 text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? "Adicionando..." : "Adicionar"}
             </button>
@@ -164,7 +164,7 @@ export function ProjectMonitor({ initialProjects }: ProjectMonitorProps) {
           <button
             onClick={refreshProjects}
             disabled={isRefreshing}
-            className="text-sm text-zinc-600 hover:text-zinc-900 disabled:opacity-50"
+            className="cursor-pointer text-sm text-zinc-600 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isRefreshing ? "Carregando..." : "Atualizar lista"}
           </button>
@@ -206,13 +206,13 @@ export function ProjectMonitor({ initialProjects }: ProjectMonitorProps) {
                   <button
                     onClick={() => handleCheck(project.id)}
                     disabled={project.status === "checking"}
-                    className="rounded border border-zinc-300 px-3 py-1 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50"
+                    className="cursor-pointer rounded border border-zinc-300 px-3 py-1 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {project.status === "checking" ? "Verificando..." : "Verificar"}
                   </button>
                   <button
                     onClick={() => handleDelete(project.id)}
-                    className="rounded px-3 py-1 text-sm text-red-600 transition-colors hover:bg-red-50"
+                    className="cursor-pointer rounded px-3 py-1 text-sm text-red-600 transition-colors hover:bg-red-50"
                   >
                     Remover
                   </button>
